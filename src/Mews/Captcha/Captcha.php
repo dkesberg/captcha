@@ -60,12 +60,16 @@ class Captcha {
      * @access	public
      * @return	img
      */
-    public static function create($id = null)
+    public static function create($id = null, $hashId = null)
     {
 
         static::$char = Str::random(static::$config['length'], static::$config['type']);
 
-        Session::put('captchaHash', Hash::make(static::$config['sensitive'] === true ? static::$char : Str::lower(static::$char)));
+        if ($hashId !== null) {
+            Session::put('captchaHashes.' . $hashId, Hash::make(static::$config['sensitive'] === true ? static::$char : Str::lower(static::$char)));
+        } else {
+            Session::put('captchaHash', Hash::make(static::$config['sensitive'] === true ? static::$char : Str::lower(static::$char)));    
+        }        
 
     	static::$id = $id ? $id : static::$config['id'];
 
@@ -180,10 +184,13 @@ class Captcha {
      * @access	public
      * @return	bool
      */
-    public static function check($value)
+    public static function check($value, $hashId = null)
     {
-
-		$captchaHash = Session::get('captchaHash');
+        if ($hashId !== null) {
+            $captchaHash = Session::get('captchaHashes.' . $hashId);
+        } else {
+		    $captchaHash = Session::get('captchaHash');
+        }
 
         return $value != null && $captchaHash != null && Hash::check(static::$config['sensitive'] === true ? $value : Str::lower($value), $captchaHash);
 
@@ -197,8 +204,12 @@ class Captcha {
      * @access	public
      * @return	string
      */
-    public static function img() {
+    public static function img($hashId = null) {
 
+        if ($hashId !== null) {
+            return URL::to('captcha?hid=' . $hashId . '&' . mt_rand(100000, 999999));
+        }
+        
 		return URL::to('captcha?' . mt_rand(100000, 999999));
 
     }
